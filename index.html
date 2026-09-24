@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>home</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cherry+Bomb+One&family=Rubik+Bubbles&display=swap');
+        :root{
+            display: flex;
+            align-items: center;
+            background-color: azure;
+            min-width: 100%;
+            min-height: 100%;
+            color: azure;
+        }
+        h1{
+            font-family: "Rubik Bubbles", system-ui;
+            font-weight: 400;
+            font-style: normal;
+            font-size: 14vh;
+
+            word-wrap: break-word; 
+            overflow-wrap: break-word;
+
+        }
+        .inf{
+            font-family:  "Cherry Bomb One", system-ui;
+            font-size: 3vh;
+            word-wrap: break-word; 
+            overflow-wrap: break-word;
+
+        }
+        .dodo{
+            display: flex;
+            flex-direction: column;
+            background-color: #0468ff;
+            max-width: 60vi;
+            min-height: 70VH;
+            padding: 30px;
+            border-radius: 50px;
+        }
+        p{
+            display: flex;
+            color: #0468ff;
+            justify-content: right;
+            align-self: flex-end;
+        }
+        button{
+            display: flex;
+            align-self: center;
+            justify-content: center;
+            align-items: center;
+            margin-top: 5vi;
+            background-color: #0468ff;
+            font-family:  "Cherry Bomb One", system-ui;
+            font-size: 3vh;
+            color: white;
+            border-radius: 30px;
+            border: 3px solid white;
+            min-width: 25vi;
+            transition: all 0.2s;
+        }
+        button:hover{
+            border-color: #0468ff00;
+            background-color: azure;
+            color: #0468ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="dodo">
+        <h1>Welcome!</h1>
+        <h1 class="inf">to humble startup made by FutureTeens</h1>
+        <button id="knopochka">enter</button>
+    </div>
+    <p>прототип идеи для WIT Teens</p>
+    <script>
+        const button = document.getElementById("knopochka")
+        button.addEventListener('click', () => {
+            window.location.href = 'home.html';
+        })
+    </script>
+</body>
+</html>
