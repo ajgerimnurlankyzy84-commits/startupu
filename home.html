@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Стартапик</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+ 
+        .grid {
+            display: grid;
+            background-color: black;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 2vh;
+            margin-left: 0;
+            margin-bottom: 16vh; /* чтобы карточки не прятались под закреплённым nav снизу */
+        }
+        .rabota{
+            background-color: aquamarine;
+            height: 60vh;
+        }
+        nav{
+            display: flex;
+            position: fixed;
+            justify-content: space-between;
+            background-color: brown;
+            align-items: center;
+            box-sizing: border-box;  
+            width: 100vi;
+            height: 15vh; 
+            bottom: 0px;  
+            margin-left: 0px;              
+            width: 100%;  
+            z-index: 10;
+                   
+        }
+        .navbutton{
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+        }
+ 
+        /* --- минимальные стили, только чтобы работало --- */
+        #filters {
+            margin-top: 2vh;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        #sidePanel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 300px;
+            height: 100%;
+            background: white;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.3);
+            transform: translateX(-100%);
+            transition: transform 0.2s ease;
+            z-index: 20;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+        #sidePanel.open {
+            transform: translateX(0);
+        }
+        #sidePanel .status-display {
+            display: inline-block;
+            padding: 4px 10px;
+            border: 1px solid black;
+        }
+    </style>
+    
+</head>
+<body>
+   
+    <nav id="nav">
+        <button class = "navbutton" id="home" data-url="home.html">дом</button>
+        <button class = "navbutton" id="kalendar" data-url="calendar.html">календарь</button>
+        <button class = "navbutton" id="cabinet" data-url="cabinet.html">личный каб</button>
+    </nav>
+
+    <div id="filters">
+        <label>Формат:
+            <select id="filterFormat">
+                <option value="все">все</option>
+                <option value="удалённо">удалённо</option>
+                <option value="на месте">на месте</option>
+            </select>
+        </label>
+        <label>Город:
+            <select id="filterCity">
+                <option value="все">все</option>
+            </select>
+        </label>
+        <label>Статус:
+            <select id="filterStatus">
+                <option value="все">все</option>
+                <option value="не откликался">не откликался</option>
+                <option value="ожидание">ожидание</option>
+                <option value="отказано">отказано</option>
+                <option value="принято">принято</option>
+            </select>
+        </label>
+        <button id="resetFilters">сбросить фильтры</button>
+    </div>
+
+    <div class="grid" id="jobsGrid"></div>
+
+    <div id="sidePanel">
+        <button id="closePanel">закрыть</button>
+        <h2 id="panelTitle"></h2>
+        <p id="panelCompany"></p>
+        <p id="panelLocation"></p>
+        <p id="panelInfo"></p>
+
+        <button id="applyBtn">Откликнуться</button>
+        <p id="statusBlock">
+            Статус: <span class="status-display" id="panelStatus"></span>
+        </p>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'witteens_jobs';
+
+        const defaultJobs = [
+            { id: 'job1', title: 'Junior Frontend Developer', company: 'TechStart', city: 'Алматы', format: 'на месте',
+              info: 'Помощь в вёрстке лендингов и адаптации дизайна под мобильные устройства. Опыт не обязателен, всему научим.', status: null },
+            { id: 'job2', title: 'Волонтёр в приюте для животных', company: 'Дом Добра', city: 'Алматы', format: 'на месте',
+              info: 'Помощь с выгулом и кормлением животных по выходным, без опыта.', status: null },
+            { id: 'job3', title: 'Стажёр SMM-менеджера', company: 'Marketing Hub', city: 'Астана', format: 'удалённо',
+              info: 'Ведение соцсетей небольшого бренда, публикация постов и общение с подписчиками.', status: null },
+            { id: 'job4', title: 'Ассистент организатора мероприятий', company: 'EventPro', city: 'Алматы', format: 'на месте',
+              info: 'Помощь в подготовке молодёжных мероприятий: логистика, встреча гостей.', status: 'отказано' },
+            { id: 'job5', title: 'Стажёр-копирайтер', company: 'Content Lab', city: 'Шымкент', format: 'удалённо',
+              info: 'Написание коротких текстов для соцсетей и блога компании.', status: 'принято' },
+            { id: 'job6', title: 'Волонтёр эко-акции', company: 'GreenFuture', city: 'Алматы', format: 'на месте',
+              info: 'Участие в субботниках и подготовке эко-мероприятий выходного дня.', status: null },
+            { id: 'job7', title: 'Junior QA Tester', company: 'CodeCraft', city: 'Астана', format: 'удалённо',
+              info: 'Ручное тестирование мобильного приложения, составление багрепортов.', status: null },
+        ];
+
+        function loadJobs() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) return JSON.parse(saved);
+            } catch (e) {}
+            return defaultJobs;
+        }
+
+        function saveJobs() {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs)); } catch (e) {}
+        }
+
+        let jobs = loadJobs();
+        let currentJobId = null; 
+
+        function populateCityFilter() {
+            const citySelect = document.getElementById('filterCity');
+            const cities = [...new Set(jobs.map(j => j.city))];
+            citySelect.innerHTML = '<option value="все">все</option>' +
+                cities.map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+        function getFilteredJobs() {
+            const format = document.getElementById('filterFormat').value;
+            const city = document.getElementById('filterCity').value;
+            const status = document.getElementById('filterStatus').value;
+
+            return jobs.filter(job => {
+                if (format !== 'все' && job.format !== format) return false;
+                if (city !== 'все' && job.city !== city) return false;
+                if (status !== 'все') {
+                    if (status === 'не откликался' && job.status !== null) return false;
+                    if (status !== 'не откликался' && job.status !== status) return false;
+                }
+                return true;
+            });
+        }
+
+        function renderJobs() {
+            const grid  = document.getElementById('jobsGrid');
+            const filtered = getFilteredJobs();
+            grid.innerHTML = filtered.map(job => `
+                <div class="rabota" data-id="${job.id}">
+                    <h1>${job.title}</h1>
+                    <p>${job.company}</p>
+                    <p>${job.city} · ${job.format}</p>
+                    <p>Статус: ${job.status ? job.status : 'не откликался'}</p>
+                    <button data-id="${job.id}" class="details-btn">Подробнее</button>
+                </div>
+            `).join('');
+        }
+
+        function openPanel(job) {
+            currentJobId = job.id;
+            document.getElementById('panelTitle').textContent = job.title;
+            document.getElementById('panelCompany').textContent = job.company;
+            document.getElementById('panelLocation').textContent = `${job.city} · ${job.format}`;
+            document.getElementById('panelInfo').textContent = job.info;
+
+            const applyBtn = document.getElementById('applyBtn');
+            const statusBlock = document.getElementById('statusBlock');
+
+            if (job.status === null) {
+                applyBtn.style.display = 'inline-block';
+                statusBlock.style.display = 'none';
+            } else {
+                applyBtn.style.display = 'none';
+                statusBlock.style.display = 'block';
+                document.getElementById('panelStatus').textContent = job.status;
+            }
+
+            document.getElementById('sidePanel').classList.add('open');
+        }
+
+        function closePanel() {
+            currentJobId = null;
+            document.getElementById('sidePanel').classList.remove('open');
+        }
+
+        populateCityFilter();
+        renderJobs();
+
+        document.getElementById('filterFormat').addEventListener('change', renderJobs);
+        document.getElementById('filterCity').addEventListener('change', renderJobs);
+        document.getElementById('filterStatus').addEventListener('change', renderJobs);
+        document.getElementById('resetFilters').addEventListener('click', () => {
+            document.getElementById('filterFormat').value = 'все';
+            document.getElementById('filterCity').value = 'все';
+            document.getElementById('filterStatus').value = 'все';
+            renderJobs();
+        });
+
+        function clickoko(document){
+            document.addEventListener('click', (event) => {
+                const navBtn = event.target.closest('button[data-url]');
+                if (navBtn) {
+                    window.location.href = navBtn.dataset.url;
+                    return;
+                }
+
+                const detailsBtn = event.target.closest('.details-btn');
+                if (detailsBtn) {
+                    const job = jobs.find(j => j.id === detailsBtn.dataset.id);
+                    if (job) {
+                        openPanel(job);
+                    }
+                    return;
+                }
+
+                if (event.target.closest('#closePanel')) {
+                    closePanel();
+                    return;
+                }
+
+
+                if (event.target.closest('#applyBtn') && currentJobId) {
+                    const job = jobs.find(j => j.id === currentJobId);
+                    if (job) {
+                        job.status = 'ожидание';
+                        saveJobs();
+                        openPanel(job);
+                        renderJobs();
+                    }
+                }
+            })
+        }
+
+        clickoko(document);
+    </script>
+</body>
+</html>
