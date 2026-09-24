@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        nav{
+            display: flex;
+            position: fixed;
+            justify-content: space-between;
+            background-color: brown;
+            align-items: center;
+            box-sizing: border-box;
+            height: 15vh;
+            bottom: 0px;
+            margin-left: 0px;
+            width: 100%;
+            z-index: 10;
+        }
+        .navbutton{
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+        }
+        #content {
+            padding: 20px;
+            margin-bottom: 16vh; 
+        }
+        #profile label {
+            display: block;
+            margin: 10px 0;
+        }
+        .applied-item {
+            border: 1px solid black;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <nav id="nav">
+        <button class = "navbutton" id="home" data-url="home.html">дом</button>
+        <button class = "navbutton" id="kalendar" data-url="calendar.html">календарь</button>
+        <button class = "navbutton" id="cabinet" data-url="cabinet.html">личный каб</button>
+    </nav>
+
+    <div id="content">
+        <h1>Личный каб</h1>
+
+        <section id="profile">
+            <h2>Профиль</h2>
+            <label>Имя:
+                <input type="text" id="profileName" placeholder="Как тебя зовут?">
+            </label>
+            <label>Образование:
+                <input type="text" id="profileEducation" placeholder="Школа / колледж / университет, класс или курс">
+            </label>
+            <label>Умения:
+                <textarea id="profileSkills" placeholder="Например: английский язык, Excel, Photoshop..."></textarea>
+            </label>
+        </section>
+
+        <section id="appliedSection">
+            <h2>Мои отклики</h2>
+            <div id="appliedList"></div>
+        </section>
+    </div>
+
+    <script>
+        const JOBS_KEY = 'witteens_jobs';
+        const PROFILE_KEY = 'witteens_profile';
+
+        // Тот же набор вакансий по умолчанию, что и в home.html — нужен как запасной вариант,
+        // если кабинет открыли раньше каталога и localStorage ещё пустой.
+        const defaultJobs = [
+            { id: 'job1', title: 'Junior Frontend Developer', company: 'TechStart', city: 'Алматы', format: 'на месте',
+              info: 'Помощь в вёрстке лендингов и адаптации дизайна под мобильные устройства.', status: null },
+            { id: 'job2', title: 'Волонтёр в приюте для животных', company: 'Дом Добра', city: 'Алматы', format: 'на месте',
+              info: 'Помощь с выгулом и кормлением животных по выходным.', status: null },
+            { id: 'job3', title: 'Стажёр SMM-менеджера', company: 'Marketing Hub', city: 'Астана', format: 'удалённо',
+              info: 'Ведение соцсетей небольшого бренда.', status: null },
+            { id: 'job4', title: 'Ассистент организатора мероприятий', company: 'EventPro', city: 'Алматы', format: 'на месте',
+              info: 'Помощь в подготовке молодёжных мероприятий.', status: 'отказано' },
+            { id: 'job5', title: 'Стажёр-копирайтер', company: 'Content Lab', city: 'Шымкент', format: 'удалённо',
+              info: 'Написание коротких текстов для соцсетей и блога компании.', status: 'принято' },
+            { id: 'job6', title: 'Волонтёр эко-акции', company: 'GreenFuture', city: 'Алматы', format: 'на месте',
+              info: 'Участие в субботниках и подготовке эко-мероприятий.', status: null },
+            { id: 'job7', title: 'Junior QA Tester', company: 'CodeCraft', city: 'Астана', format: 'удалённо',
+              info: 'Ручное тестирование мобильного приложения.', status: null },
+        ];
+
+        function loadJobs() {
+            try {
+                const saved = localStorage.getItem(JOBS_KEY);
+                if (saved) return JSON.parse(saved);
+            } catch (e) {}
+            return defaultJobs;
+        }
+
+        // --- профиль: подгружаем сохранённые значения, сохраняем при вводе ---
+        function loadProfile() {
+            try {
+                const saved = localStorage.getItem(PROFILE_KEY);
+                if (saved) return JSON.parse(saved);
+            } catch (e) {}
+            return { name: '', education: '', skills: '' };
+        }
+
+        function saveProfile(profile) {
+            try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) {}
+        }
+
+        const profile = loadProfile();
+        document.getElementById('profileName').value = profile.name;
+        document.getElementById('profileEducation').value = profile.education;
+        document.getElementById('profileSkills').value = profile.skills;
+
+        ['profileName', 'profileEducation', 'profileSkills'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                saveProfile({
+                    name: document.getElementById('profileName').value,
+                    education: document.getElementById('profileEducation').value,
+                    skills: document.getElementById('profileSkills').value,
+                });
+            });
+        });
+
+        // --- список откликов: все вакансии, у которых status не null ---
+        function renderApplied() {
+            const jobs = loadJobs();
+            const applied = jobs.filter(job => job.status !== null);
+            const list = document.getElementById('appliedList');
+
+            if (applied.length === 0) {
+                list.innerHTML = '<p>Пока нет откликов — загляни в каталог на главной.</p>';
+                return;
+            }
+
+            list.innerHTML = applied.map(job => `
+                <div class="applied-item">
+                    <strong>${job.title}</strong> — ${job.company}, ${job.city} · ${job.format}<br>
+                    Статус: ${job.status}
+                </div>
+            `).join('');
+        }
+
+        renderApplied();
+
+        function clickoko(document){
+            document.addEventListener('click', (event) => {
+                const navBtn = event.target.closest('button[data-url]');
+                if (navBtn) {
+                    window.location.href = navBtn.dataset.url;
+                }
+            })
+        }
+
+        clickoko(document);
+    </script>
+</body>
+</html>
